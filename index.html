@@ -2,18 +2,26 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>Planilla Morada AR</title>
+    
+    <!-- Forzar compatibilidad estricta con Safari e iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Cargamos A-Frame en una versión ultra compatible con giroscopios móviles -->
+    <script src="https://aframe.io"></script>
+    
     <style>
+        /* Forzar que la pantalla ocupe el 100% real sin barras de scroll */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* Video nativo al fondo */
+        /* Video nativo de fondo */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* Capa 3D centrada en pantalla */
-        #capa-ar { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        /* Forzar que la escena 3D flote exactamente encima del video en pantalla completa */
+        a-scene { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
         
-        /* Pantalla de Bienvenida */
+        /* Interfaz de bienvenida amigable para adultos mayores */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -32,93 +40,70 @@
             width: 80%; max-width: 300px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
     </style>
-    <script src="https://aframe.io"></script>
 </head>
 <body>
 
+    <!-- Pantalla de Bienvenida -->
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para una mejor experiencia, permite el uso de la cámara y los sensores de movimiento.</p>
-        <button class="btn-activar" onclick="solicitarPermisos()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para ver la experiencia, presiona el botón y permite el uso de la cámara.</p>
+        <button class="btn-activar" onclick="arrancarCampana()">VER PROPUESTAS</button>
     </div>
 
+    <!-- Guía de texto para el usuario -->
     <div id="guia-texto" class="instrucciones">
-        Gira tu celular para ver todas las propuestas.
+        Gira tu celular para buscar las propuestas en el espacio.
     </div>
 
+    <!-- Cámara de video nativa del teléfono -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <div id="capa-ar">
-        <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" style="background: transparent !important;">
-            
-            <a-assets>
-                <img id="foto" src="./assets/mi-foto.png">
-                <img id="prop1" src="./assets/propuesta1.png">
-                <img id="prop2" src="./assets/propuesta2.png">
-            </a-assets>
+    <!-- Escena 3D Directa (Sin divs contenedores que rompan el diseño) -->
+    <!-- El estilo transparente asegura que el video se vea abajo sin pantallas negras -->
+    <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" style="background: transparent !important;">
+        
+        <a-assets>
+            <img id="foto" src="./assets/mi-foto.png">
+            <img id="prop1" src="./assets/propuesta1.png">
+            <img id="prop2" src="./assets/propuesta2.png">
+        </a-assets>
 
-            <!-- Este es el contenedor que va a girar con el giroscopio del celular -->
-            
-                
-                    <!-- Tu foto principal al centro -->
-                    <a-image src="#foto" position="0 0.5 0" width="1.1" height="1.4"></a-image>
-                    
-                    <!-- Propuesta Principal abajo -->
-                    <a-image src="#prop1" position="0 -0.5 0" width="1.6" height="0.45"></a-image>
+        <!-- TU FOTO: Flotando exactamente frente al usuario al iniciar -->
+        <a-image src="#foto" position="0 0.4 -2.2" width="1.1" height="1.4"></a-image>
+        
+        <!-- PROPUESTA 1: Justo abajo de tu foto de perfil -->
+        <a-image src="#prop1" position="0 -0.6 -2.2" width="1.6" height="0.45"></a-image>
 
-                    <!-- Segunda Propuesta a la derecha (Para verla deben girar el celular un poco) -->
-                    <a-image src="#prop2" position="1.8 0.1 -0.4" rotation="0 -30 0" width="1.4" height="0.45"></a-image>
-                
-            
+        <!-- PROPUESTA 2 (Efecto Pokémon Go): Escondida a la derecha. El médico DEBE girar el cuerpo para encontrarla -->
+        <a-image src="#prop2" position="2.2 0.0 -1.0" rotation="0 -65 0" width="1.4" height="0.45"></a-image>
 
-            
-        </a-scene>
-    </div>
+        <!-- CÁMARA VIRTUAL: Desbloquea el giroscopio nativo de los celulares para permitir el paneo 360° -->
+        
+        
+    </a-scene>
 
     <script>
-        function solicitarPermisos() {
-            // 1. Activar la cámara nativa del celular
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+        function arrancarCampana() {
+            const video = document.getElementById('webcam');
+            
+            // Activar la cámara nativa trasera
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
+                audio: false 
+            })
             .then(function(stream) {
-                document.getElementById('webcam').srcObject = stream;
+                video.srcObject = stream;
+                video.play();
                 
-                // 2. Solicitar permisos de giroscopio (Especialmente obligatorio en iPhones)
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            activarGiroscopio();
-                        } else {
-                            // Si lo niegan, igual funciona pero se queda estático
-                            activarGiroscopio(); 
-                        }
-                    })
-                    .catch(console.error);
-                } else {
-                    // Android y teléfonos comunes no necesitan ventana extra, entran directo
-                    activarGiroscopio();
-                }
-
+                // Ocultar bienvenida y mostrar instrucciones flotantes
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
             })
             .catch(function(err) {
-                alert("Es necesario permitir la cámara para ver las propuestas.");
+                alert("Por seguridad, debes permitir el acceso a la cámara para interactuar con la planilla.");
+                console.error(err);
             });
-        }
-
-        function activarGiroscopio() {
-            const contenedor = document.getElementById('contenedor-propuestas');
-            
-            // Escuchamos el movimiento real del teléfono
-            window.addEventListener('deviceorientation', function(event) {
-                // Obtenemos los grados de rotación (alrededor del eje vertical del celular)
-                if (event.alpha !== null) {
-                    // Sincronizamos de forma ultra suave las propuestas con el giro del usuario
-                    contenedor.setAttribute('rotation', `0 ${event.alpha} 0`);
-                }
-            }, true);
         }
     </script>
 </body>
