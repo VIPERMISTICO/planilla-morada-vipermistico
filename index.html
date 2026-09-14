@@ -5,16 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Planilla Morada AR</title>
     <style>
-        /* Diseño base de pantalla completa */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* CÁMARA NATIVA: Forzada a ocupar el fondo real de la pantalla */
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transform: scaleX(1); }
+        /* Video nativo al fondo */
+        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* CAPA 3D: Transparente y superpuesta exactamente arriba del video */
+        /* Capa 3D centrada en pantalla */
         #capa-ar { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
         
-        /* Interfaz de bienvenida flotante (Adaptada para adultos mayores) */
+        /* Pantalla de Bienvenida */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -28,34 +27,29 @@
         }
         .instrucciones {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(74, 20, 140, 0.9); color: white; padding: 12px 24px;
+            background: rgba(106, 27, 154, 0.9); color: white; padding: 12px 24px;
             border-radius: 25px; font-size: 14px; text-align: center; z-index: 999;
             width: 80%; max-width: 300px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
     </style>
-    <!-- Cargamos únicamente el motor 3D ligero -->
     <script src="https://aframe.io"></script>
 </head>
 <body>
 
-    <!-- Pantalla de Bienvenida -->
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Al presionar el botón, selecciona "Permitir" si el teléfono solicita acceso a la cámara.</p>
-        <button class="btn-activar" onclick="arrancarCampana()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para una mejor experiencia, permite el uso de la cámara y los sensores de movimiento.</p>
+        <button class="btn-activar" onclick="solicitarPermisos()">VER PROPUESTAS</button>
     </div>
 
     <div id="guia-texto" class="instrucciones">
-        Mueve tu celular para interactuar con las propuestas.
+        Gira tu celular para ver todas las propuestas.
     </div>
 
-    <!-- Video Nativo de la Cámara Ocupando el Fondo -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <!-- Contenedor del Motor Gráfico 3D (Totalmente Transparente) -->
     <div id="capa-ar">
-        <!-- Configuramos la escena para tener fondo transparente (color-space y de-facto canvas clear) -->
         <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" style="background: transparent !important;">
             
             <a-assets>
@@ -64,49 +58,67 @@
                 <img id="prop2" src="./assets/propuesta2.png">
             </a-assets>
 
-            <!-- Tus elementos flotando a una distancia perfecta de lectura (2.2 metros) -->
+            <!-- Este es el contenedor que va a girar con el giroscopio del celular -->
             
-                <!-- Tu fotografía principal -->
-                <a-image src="#foto" position="0 0.5 0" width="1.1" height="1.4"></a-image>
                 
-                <!-- Propuesta Principal abajo de la foto -->
-                <a-image src="#prop1" position="0 -0.5 0" width="1.6" height="0.45"></a-image>
+                    <!-- Tu foto principal al centro -->
+                    <a-image src="#foto" position="0 0.5 0" width="1.1" height="1.4"></a-image>
+                    
+                    <!-- Propuesta Principal abajo -->
+                    <a-image src="#prop1" position="0 -0.5 0" width="1.6" height="0.45"></a-image>
 
-                <!-- Segunda Propuesta inclinada hacia el lado derecho -->
-                <a-image src="#prop2" position="1.7 0.0 -0.3" rotation="0 -30 0" width="1.4" height="0.45"></a-image>
+                    <!-- Segunda Propuesta a la derecha (Para verla deben girar el celular un poco) -->
+                    <a-image src="#prop2" position="1.8 0.1 -0.4" rotation="0 -30 0" width="1.4" height="0.45"></a-image>
+                
             
 
-            <!-- Cámara Virtual del mundo 3D fija con controles básicos de orientación -->
             
         </a-scene>
     </div>
 
     <script>
-        function arrancarCampana() {
-            const video = document.getElementById('webcam');
-            
-            // Forzar de forma nativa e infalible la solicitud de cámara del navegador móvil
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment', // Obligar a usar la cámara trasera
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }, 
-                audio: false 
-            })
+        function solicitarPermisos() {
+            // 1. Activar la cámara nativa del celular
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
             .then(function(stream) {
-                // Asignamos el flujo de video directo a nuestra etiqueta de fondo
-                video.srcObject = stream;
-                video.play();
+                document.getElementById('webcam').srcObject = stream;
                 
-                // Ocultamos la bienvenida y mostramos la guía
+                // 2. Solicitar permisos de giroscopio (Especialmente obligatorio en iPhones)
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            activarGiroscopio();
+                        } else {
+                            // Si lo niegan, igual funciona pero se queda estático
+                            activarGiroscopio(); 
+                        }
+                    })
+                    .catch(console.error);
+                } else {
+                    // Android y teléfonos comunes no necesitan ventana extra, entran directo
+                    activarGiroscopio();
+                }
+
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
             })
             .catch(function(err) {
-                alert("Para vivir la experiencia de la Planilla Morada, por favor recarga la página y acepta el permiso de la cámara.");
-                console.error("Error de cámara nativa: ", err);
+                alert("Es necesario permitir la cámara para ver las propuestas.");
             });
+        }
+
+        function activarGiroscopio() {
+            const contenedor = document.getElementById('contenedor-propuestas');
+            
+            // Escuchamos el movimiento real del teléfono
+            window.addEventListener('deviceorientation', function(event) {
+                // Obtenemos los grados de rotación (alrededor del eje vertical del celular)
+                if (event.alpha !== null) {
+                    // Sincronizamos de forma ultra suave las propuestas con el giro del usuario
+                    contenedor.setAttribute('rotation', `0 ${event.alpha} 0`);
+                }
+            }, true);
         }
     </script>
 </body>
