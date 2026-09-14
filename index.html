@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Campaña Electoral AR</title>
+    <!-- Librerías de Realidad Aumentada Web de código abierto -->
+    <script src="https://aframe.io"></script>
+    <script src="https://githack.com"></script>
+    <style>
+        /* Estilos para asegurar que la interfaz se adapte perfectamente al celular */
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        .instrucciones {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7); color: white; padding: 12px 24px;
+            border-radius: 20px; font-size: 14px; text-align: center; z-index: 10;
+            pointer-events: none; width: 80%; max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mensaje de ayuda para los médicos o adultos mayores -->
+    <div class="instrucciones">
+        Mueve tu celular despacio para ver las propuestas flotando en tu espacio.
+    </div>
+
+    <!-- Escena de Realidad Aumentada -->
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;'>
+        
+        <!-- Contenedor de tus elementos de campaña (Posicionados frente a la pantalla del usuario) -->
+        <!-- position="X Y Z" -> X: Izquierda/Derecha, Y: Altura, Z: Distancia (valores negativos son hacia el fondo) -->
+        
+            
+            <!-- Tu fotografía (Se recomienda con fondo transparente .PNG) -->
+            <a-image src="./assets/mi-foto.png" position="0 0.5 0" width="1.2" height="1.5"></a-image>
+            
+            <!-- Letrero flotante de tu propuesta principal debajo de tu foto -->
+            <a-image src="./assets/propuesta1.png" position="0 -0.6 0" width="1.8" height="0.5"></a-image>
+
+            <!-- Una segunda propuesta un poco a la derecha, para que exploren girando el teléfono -->
+            <a-image src="./assets/propuesta2.png" position="2 0 -0.5" rotation="0 -30 0" width="1.5" height="0.5"></a-image>
+            
+        
+
+        <!-- Cámara del dispositivo -->
+        <a-camera-static/>
+    </a-scene>
+
+</body>
+</html>

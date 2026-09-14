@@ -1,0 +1,22 @@
+{
+  "name": "campana-electoral-ar",
+  "version": "1.0.0",
+  "description": "Aplicación WebAR para campaña electoral dirigida al sector salud",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "webar",
+    "node",
+    "express"
+  ],
+  "author": "Tu Nombre",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
