@@ -2,91 +2,67 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Campaña Electoral AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Planilla Morada AR</title>
+    
+    <!-- Forzar compatibilidad estricta con Safari e iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <!-- Librerías estables de A-Frame y AR.js -->
+    <!-- Librerías de confianza en versiones ultra-compatibles -->
     <script src="https://aframe.io"></script>
     <script src="https://githack.com"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background-color: #000; }
+        /* Forzar que tanto el cuerpo como el video de la cámara ocupen el 100% real sin fallos */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
+        video { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; object-fit: cover; z-index: -1; }
         
-        /* Pantalla de bienvenida con botón para forzar permisos (Amigable para tercera edad) */
-        #pantalla-inicio {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #4a148c, #7b1fa2);
-            z-index: 9999; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; color: white; text-align: center; padding: 20px; box-sizing: border-box;
-        }
-        .btn-activar {
-            background-color: #00e676; color: #000; font-size: 18px; font-weight: bold;
-            padding: 16px 32px; border: none; border-radius: 30px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 20px; transition: transform 0.2s;
-        }
-        .btn-activar:active { transform: scale(0.95); }
-
+        /* Mensaje flotante adaptado para adultos mayores */
         .instrucciones {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(106, 27, 154, 0.9); color: white; padding: 14px 24px;
-            border-radius: 25px; font-size: 15px; text-align: center; z-index: 999;
-            width: 80%; max-width: 320px; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); font-weight: bold;
-            display: none; /* Se muestra solo cuando inicia la cámara */
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(74, 20, 140, 0.9); color: white; padding: 14px 24px;
+            border-radius: 25px; font-size: 15px; text-align: center; z-index: 9999;
+            width: 80%; max-width: 320px; box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
+            font-weight: bold; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Bienvenida -->
-    <div id="pantalla-inicio">
-        <h2 style="margin: 0 0 10px 0;">Planilla Morada</h2>
-        <p style="font-size: 16px; max-width: 280px; margin: 0 0 10px 0;">Bienvenido a nuestra experiencia de propuestas en Realidad Aumentada.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px;">Para continuar, presiona el botón de abajo y permite el acceso a tu cámara si el sistema lo solicita.</p>
-        <button class="btn-activar" onclick="inicializarCamara()">VER PROPUESTAS</button>
-    </div>
-
-    <!-- Mensaje guía flotante -->
-    <div id="guia" class="instrucciones">
+    <div class="instrucciones">
         Mueve tu celular despacio para ver las propuestas flotando.
     </div>
 
-    <!-- Escena AR (Inicialmente vacía, la creamos dinámicamente por JavaScript) -->
-    <div id="ar-container"></div>
+    <!-- La escena se escribe directa y limpia desde el inicio, sin trucos de JavaScript -->
+    <a-scene embedded 
+             arjs="sourceType: webcam; videoSettings: {facingMode: 'environment'}; debugUIEnabled: false;" 
+             vr-mode-ui="enabled: false"
+             renderer="logarithmicDepthBuffer: true; colorManagement: true;">
+        
+        <!-- Precarga de imágenes para evitar fallos de carga en red lenta -->
+        <a-assets>
+            <img id="foto" src="./assets/mi-foto.png">
+            <img id="prop1" src="./assets/propuesta1.png">
+            <img id="prop2" src="./assets/propuesta2.png">
+        </a-assets>
 
-    <script>
-        function inicializarCamara() {
-            // 1. Forzar de forma nativa la solicitud de permisos mediante el clic del usuario
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(function(stream) {
-                // Si el usuario da permiso, detenemos este stream temporal para que AR.js tome el control
-                stream.getTracks().forEach(track => track.stop());
-                
-                // Ocultamos la pantalla morada de bienvenida y mostramos el letrero guía
-                document.getElementById('pantalla-inicio').style.display = 'none';
-                document.getElementById('guia').style.display = 'block';
+        <!-- Elementos posicionados en el espacio frente al usuario (2.2 metros de distancia) -->
+        
+            
+            <!-- Tu fotografía -->
+            <a-image src="#foto" position="0 0.6 0" width="1.1" height="1.4"></a-image>
+            
+            <!-- Propuesta Principal abajo de la foto -->
+            <a-image src="#prop1" position="0 -0.4 0" width="1.6" height="0.45"></a-image>
 
-                // 2. Inyectamos la escena de Realidad Aumentada de forma segura
-                const container = document.getElementById('ar-container');
-                container.innerHTML = `
-                    <a-scene embedded arjs="sourceType: webcam; videoSettings: {facingMode: 'environment'}; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-                        
-                            <!-- Tu foto de campaña -->
-                            <a-image src="./assets/mi-foto.png" position="0 0.6 0" width="1.0" height="1.3"></a-image>
-                            <!-- Propuesta 1 -->
-                            <a-image src="./assets/propuesta1.png" position="0 -0.4 0" width="1.5" height="0.4"></a-image>
-                            <!-- Propuesta 2 -->
-                            <a-image src="./assets/propuesta2.png" position="1.6 0.1 -0.3" rotation="0 -25 0" width="1.3" height="0.4"></a-image>
-                        
-                        
-                    </a-scene>
-                `;
-            })
-            .catch(function(err) {
-                alert("Para vivir la experiencia es necesario permitir el uso de la cámara. Por favor, recarga la página e intenta de nuevo.");
-                console.error("Error al acceder a la cámara: ", err);
-            });
-        }
-    </script>
+            <!-- Segunda Propuesta inclinada hacia el lado derecho -->
+            <a-image src="#prop2" position="1.7 0.1 -0.4" rotation="0 -30 0" width="1.4" height="0.45"></a-image>
+            
+        
+
+        <!-- Cámara de Realidad Aumentada nativa de AR.js -->
+        
+    </a-scene>
+
 </body>
 </html>
