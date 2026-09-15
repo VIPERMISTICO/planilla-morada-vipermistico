@@ -10,7 +10,7 @@
         /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Ventana de captura táctil que flota arriba de la cámara */
+        /* VISOR AR: Ventana de captura táctil total arriba de la cámara */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
@@ -30,7 +30,7 @@
             user-select: none; -webkit-user-select: none;
         }
 
-        /* Separación de 950px fijos a los lados del centro */
+        /* Separación simétrica de 950px fijos a los lados del centro */
         #bloque-centro { left: 50%; transform: translate3d(-50%, 0, 0); width: 260px; }
         #bloque-izquierda { left: calc(50% - 950px); transform: translate3d(-50%, 0, 0); width: 240px; }
         #bloque-derecha { left: calc(50% + 950px); transform: translate3d(-50%, 0, 0); width: 240px; }
@@ -174,27 +174,30 @@
             const visor = document.getElementById('visor-ar');
             const lienzo = document.getElementById('lienzo-360');
 
+            // CORRECCIÓN SAFARI: Obligamos a escuchar los toques de forma directa sin modo pasivo
             visor.addEventListener('touchstart', function(e) {
-                toqueInicialX = e.touches.clientX;
+                toqueInicialX = e.touches[0].clientX;
                 posicionInicialLienzo = posicionActual;
                 lienzo.style.transition = 'none';
-            }, { passive: true });
+            }, { passive: false });
 
             visor.addEventListener('touchmove', function(e) {
-                let distanciaDesplazada = e.touches.clientX - toqueInicialX;
+                // TRUCO MAESTRO: cancela el scroll vertical de la ventana nativa de Safari
+                e.preventDefault(); 
+                
+                let distanciaDesplazada = e.touches[0].clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
                 // Límites de arrastre horizontal libres para navegar
                 if (posicionActual > 1150) posicionActual = 1150;   
                 if (posicionActual < -1150) posicionActual = -1150; 
 
-                // TRUCO DEFINITIVO PARA SAFARI: Usamos translate3d acelerado por GPU
                 lienzo.style.transform = 'translate3d(' + posicionActual + 'px, 0px, 0px)';
-            }, { passive: true });
+            }, { passive: false });
 
             visor.addEventListener('touchend', function() {
                 lienzo.style.transition = 'transform 0.2s ease-out';
-            }, { passive: true });
+            }, { passive: false });
         }
     </script>
 </body>
