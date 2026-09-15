@@ -6,16 +6,48 @@
     <title>Planilla Morada AR</title>
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-        #visor-ar { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; overflow: hidden; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-        #lienzo-360 { position: absolute; width: 3000px; height: 100%; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translateX(0px); }
-        .bloque-campana { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
-        #bloque-centro img { width: 160px; height: auto; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        #bloque-izquierda { left: calc(50% - 950px); transform: translateX(-50%); width: 240px; }
-        #bloque-derecha { left: calc(50% + 950px); transform: translateX(-50%); width: 240px; }
-        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         
+        /* CÁMARA REAL: El entorno de fondo */
+        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        
+        /* VISOR PRINCIPAL: Actúa como ventana receptora de los gestos táctiles (z-index alto) */
+        #visor-ar { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        
+        /* LIENZO PANORÁMICO: Organiza las 3 vistas una al lado de la otra de forma horizontal */
+        #lienzo-360 {
+            position: absolute; width: 300%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            will-change: transform; transform: translateX(0px);
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Deslizamiento fluido premium */
+        }
+
+        /* CONFIGURACIÓN INDIVIDUAL PARA CADA CONTENIDO DE CAMPAÑA */
+        .seccion-vista {
+            width: 33.333%; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; box-sizing: border-box; padding: 24px;
+        }
+
+        .tarjeta-grafica {
+            width: 85%; max-width: 290px; height: auto; border-radius: 16px;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.6); background: rgba(0,0,0,0.15);
+        }
+
+        /* INDICADORES DE PÁGINA (PUNTOS INFERIORES) */
+        .contenedor-puntos {
+            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; z-index: 99; background: rgba(74, 20, 140, 0.85);
+            padding: 8px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .punto {
+            width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .punto.activo { background: #00e676; transform: scale(1.2); }
+
+        /* Pantalla de Bienvenida */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -27,74 +59,61 @@
             padding: 16px 32px; border: none; border-radius: 30px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
-        .instrucciones {
-            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
-            background: rgba(74, 20, 140, 0.95); color: white; padding: 12px 24px;
-            border-radius: 25px; font-size: 14px; text-align: center; z-index: 999;
-            width: 80%; max-width: 300px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
     </style>
 </head>
 <body>
 
+    <!-- Pantalla de Bienvenida -->
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para otorgar permisos de movimiento y cámara en tu iPhone.</p>
-        <button class="btn-activar" onclick="desbloquearSensoresPrimero()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y explorar las propuestas deslizando tu dedo.</p>
+        <button class="btn-activar" onclick="inicializarSistemaTactil()">VER PROPUESTAS</button>
     </div>
 
-    <div id="guia-texto" class="instrucciones">
-        Gira tu cuerpo a los lados para buscar las propuestas en tu espacio.
+    /* Puntos guía inferiores */
+    <div class="contenedor-puntos">
+        <div id="p0" class="punto activo"></div>
+        <div id="p1" class="punto"></div>
+        <div id="p2" class="punto"></div>
     </div>
 
+    <!-- Cámara trasera nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
+    <!-- Escenario AR de Arrastre -->
     <div id="visor-ar">
         <div id="lienzo-360">
-            <div id="bloque-izquierda" class="bloque-campana">
-                <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
+            
+            <!-- VISTA 1: Tu fotografía central -->
+            <div class="seccion-vista">
+                <img class="tarjeta-grafica" src="./assets/mi-foto.png" alt="Candidato">
+                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 6px 18px; border-radius: 20px; margin-top: 15px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">Planilla Morada</p>
             </div>
-            <div id="bloque-centro" class="bloque-campana">
-                <img src="./assets/mi-foto.png" alt="Candidato">
-                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 4px 14px; border-radius: 10px; margin-top: 8px;">Planilla Morada</p>
+            
+            <!-- VISTA 2: Propuesta 1 -->
+            <div class="seccion-vista">
+                <img class="tarjeta-grafica" src="./assets/propuesta1.png" alt="Propuesta 1">
             </div>
-            <div id="bloque-derecha" class="bloque-campana">
-                <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
+
+            <!-- VISTA 3: Propuesta 2 -->
+            <div class="seccion-vista">
+                <img class="tarjeta-grafica" src="./assets/propuesta2.png" alt="Propuesta 2">
             </div>
+
         </div>
     </div>
 
     <script>
-        let inicioAlpha = null;
-        let alphaActual = 0;
+        let vistaActual = 0; // 0 = Foto, 1 = Propuesta 1, 2 = Propuesta 2
+        let xInicial = 0;
+        let xDesplazamiento = 0;
         const lienzo = document.getElementById('lienzo-360');
 
-        function desbloquearSensoresPrimero() {
-            // PASO 1: Comprobar y forzar el giroscopio de inmediato en el milisegundo del clic
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                .then(permissionState => {
-                    if (permissionState === 'granted') {
-                        vincularSensoresFisicos();
-                        activarCamaraNativa(); // Si acepta, abrimos la cámara
-                    } else {
-                        alert("Para vivir la experiencia tipo Pokémon Go debes permitir los sensores.");
-                    }
-                })
-                .catch(err => {
-                    console.error("Fallo de permisos de Apple:", err);
-                    activarCamaraNativa(); // Intentar bypass
-                });
-            } else {
-                // Teléfonos comunes sin restricciones
-                vincularSensoresFisicos();
-                activarCamaraNativa();
-            }
-        }
-
-        function activarCamaraNativa() {
+        function inicializarSistemaTactil() {
             const video = document.getElementById('webcam');
+            
+            // Encender únicamente la cámara trasera
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -103,39 +122,60 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // Desvanecer pantallas de carga
+                // Activar la escucha de gestos en pantalla completa
+                configurarArrastre();
+
                 document.getElementById('pantalla-inicio').style.display = 'none';
-                document.getElementById('guia-texto').style.display = 'block';
-                
-                // Iniciar el motor de animación continua
-                actualizarAnimacion();
             })
             .catch(function(err) {
-                alert("Se requieren permisos de cámara para activar la experiencia.");
+                // Si están en PC o bloquean la cámara, igual les permitimos leer las propuestas
+                document.getElementById('pantalla-inicio').style.display = 'none';
+                configurarArrastre();
             });
         }
 
-        function vincularSensoresFisicos() {
-            window.addEventListener('deviceorientation', function(event) {
-                if (event.alpha !== null) {
-                    if (inicioAlpha === null) {
-                        inicioAlpha = event.alpha; 
+        function configurarArrastre() {
+            const visor = document.getElementById('visor-ar');
+
+            // Capturar el momento en que el dedo toca la pantalla
+            visor.addEventListener('touchstart', function(e) {
+                xInicial = e.touches[0].clientX;
+                xDesplazamiento = 0;
+            }, { passive: true });
+
+            // Registrar el arrastre del dedo en tiempo real
+            visor.addEventListener('touchmove', function(e) {
+                xDesplazamiento = e.touches[0].clientX - xInicial;
+            }, { passive: true });
+
+            // Calcular el cambio de página al despegar el dedo (efecto Swipe amigable)
+            visor.addEventListener('touchend', function() {
+                // Umbral mínimo de movimiento: 50 píxeles para cambiar de tarjeta
+                if (Math.abs(xDesplazamiento) > 50) {
+                    if (xDesplazamiento > 0 && vistaActual > 0) {
+                        vistaActual--; // Desliza a la derecha (vuelve a la tarjeta anterior)
+                    } else if (xDesplazamiento < 0 && vistaActual < 2) {
+                        vistaActual++; // Desliza a la izquierda (avanza a la siguiente propuesta)
                     }
-                    alphaActual = event.alpha;
+                    actualizarPosicionLienzo();
                 }
-            }, true);
+            }, { passive: true });
         }
 
-        function actualizarAnimacion() {
-            if (inicioAlpha !== null) {
-                let cambioAngulo = alphaActual - inicioAlpha;
-                if (cambioAngulo > 180) cambioAngulo -= 360;
-                if (cambioAngulo < -180) cambioAngulo += 360;
-                
-                let desplazamientoPixeles = cambioAngulo * 15;
-                lienzo.style.transform = 'translateX(' + desplazamientoPixeles + 'px)';
+        function actualizarPosicionLienzo() {
+            // Cada sección ocupa exactamente un tercio (33.333%) de la tira panorámica
+            let desplazamientoPorcentaje = -vistaActual * 33.333;
+            lienzo.style.transform = 'translateX(' + desplazamientoPorcentaje + '%)';
+
+            // Actualizar el encendido de los puntos guía inferiores
+            for (let i = 0; i <= 2; i++) {
+                const punto = document.getElementById('p' + i);
+                if (i === vistaActual) {
+                    punto.classList.add('activo');
+                } else {
+                    punto.classList.remove('activo');
+                }
             }
-            requestAnimationFrame(actualizarAnimacion);
         }
     </script>
 </body>
