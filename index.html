@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>Planilla Morada AR</title>
     
-    <!-- Forzar pantalla completa e ignorar bloqueos de red externos -->
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
@@ -16,42 +15,45 @@
         #universo-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
             display: flex; align-items: center; justify-content: center; pointer-events: none;
-            perspective: 800px; /* Genera profundidad tridimensional nativa */
+            perspective: 600px; /* Genera profundidad tridimensional */
         }
         
-        /* ROTADOR GIROSCÓPICO: Mueve los elementos al girar el cuerpo */
+        /* ROTADOR GIROSCÓPICO: Gira todo el cuarto al mover el cuerpo */
         #eje-movimiento {
             position: relative; width: 100%; height: 100%;
             transform-style: preserve-3d;
+            will-change: transform;
         }
 
-        /* DISEÑO DE IMÁGENES EN 3D REAL */
+        /* DISEÑO DE IMÁGENES EN MULTI-DIRECCIÓN */
         .propuesta-3d {
             position: absolute; top: 50%; left: 50%;
             backface-visibility: hidden;
             transform-style: preserve-3d;
             max-width: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border-radius: 10px;
         }
 
-        /* Tu foto de campaña flotando al frente */
+        /* FOTO PRINCIPAL: Justo en el centro al frente */
         #mi-foto {
-            width: 160px; height: auto;
-            transform: translate(-50%, -60%) translateZ(-350px);
+            width: 150px; height: auto;
+            transform: translate(-50%, -60%) rotateY(0deg) translateZ(-350px);
         }
 
-        /* Propuesta principal abajo de la foto */
+        /* PROPUESTA 1 (Pokémon Go Izquierda): Gira el celular un poco a la izquierda para leerla */
         #propuesta-1 {
-            width: 220px; height: auto;
-            transform: translate(-50%, 65%) translateZ(-350px);
+            width: 200px; height: auto;
+            transform: translate(-50%, -40%) rotateY(45deg) translateZ(-350px);
         }
 
-        /* PROPUESTA 2 (Estilo Pokémon Go): Escondida a la DERECHA. Hay que girar el cuerpo 90 grados para verla */
+        /* PROPUESTA 2 (Pokémon Go Derecha): Gira el celular un poco a la derecha para descubrirla */
         #propuesta-2 {
             width: 200px; height: auto;
-            transform: translateX(350px) translateY(-50%) rotateY(-90deg);
+            transform: translate(-50%, -40%) rotateY(-45deg) translateZ(-350px);
         }
 
-        /* Pantalla de bienvenida formal de la planilla */
+        /* Interfaz de bienvenida */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -77,18 +79,18 @@
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para iniciar, presiona el botón y permite el uso de la cámara del dispositivo.</p>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y buscar el contenido flotando.</p>
         <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
     <div id="guia-texto" class="instrucciones">
-        Gira tu celular hacia la derecha para descubrir más propuestas.
+        Gira tu celular a los lados para descubrir las propuestas.
     </div>
 
-    <!-- Cámara de video nativa -->
+    <!-- Video nativo -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <!-- Espacio 3D Matemático Puro (Cero dependencias externas) -->
+    <!-- Espacio Virtual Circular -->
     <div id="universo-ar">
         <div id="eje-movimiento">
             <img id="mi-foto" class="propuesta-3d" src="./assets/mi-foto.png" alt="Candidato">
@@ -101,7 +103,7 @@
         function inicializarSistema() {
             const video = document.getElementById('webcam');
             
-            // 1. Encender la cámara de forma nativa e infalible
+            // Encender cámara
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -110,18 +112,12 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // 2. Desbloquear los sensores del giroscopio
+                // Activar sensores
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    // Ventana de seguridad para iPhones
                     DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        vincularSensores();
-                    })
-                    .catch(function(err) {
-                        vincularSensores(); // Intentar en Android si falla
-                    });
+                    .then(permissionState => { vincularSensores(); })
+                    .catch(function(err) { vincularSensores(); });
                 } else {
-                    // Android y navegadores comunes entran directo
                     vincularSensores();
                 }
 
@@ -136,12 +132,11 @@
         function vincularSensores() {
             const eje = document.getElementById('eje-movimiento');
             
-            // Leemos el movimiento real del giroscopio del teléfono
             window.addEventListener('deviceorientation', function(event) {
                 if (event.alpha !== null) {
-                    // El truco definitivo: Rotamos todo el universo 3D en sentido inverso al teléfono.
-                    // Al mover el celular a la derecha, las imágenes se quedan quietas en el aire del cuarto.
-                    eje.style.transform = 'rotateY(' + (-event.alpha) + 'deg)';
+                    // Compensamos la rotación para dar el efecto Pokémon Go.
+                    // Probamos el giro directo del ángulo para asegurar sincronía.
+                    eje.style.transform = 'rotateY(' + event.alpha + 'deg)';
                 }
             }, true);
         }
