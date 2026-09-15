@@ -10,13 +10,13 @@
         /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Ventana de captura táctil total arriba de la cámara */
+        /* VISOR AR: Ventana de captura táctil total */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO LIBRE: Ahora se desplaza usando 'left' para evitar conflictos */
+        /* LIENZO PANORÁMICO LIBRE: Forzado a nacer perfectamente centrado (left: 0) */
         #lienzo-360 {
             position: absolute; width: 3000px; height: 100%; left: 0px;
             display: flex; align-items: center; justify-content: center;
@@ -26,38 +26,51 @@
         /* CONFIGURACIÓN BASE DE BLOQUES EN EL ESPACIO HORIZONTAL */
         .bloque-campana {
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            user-select: none; -webkit-user-select: none; /* Desactivar selección de foto en iPhone */
+            user-select: none; -webkit-user-select: none;
         }
 
+        /* Distancias simétricas de 950px respecto al centro exacto */
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
         #bloque-izquierda { left: calc(50% - 950px); transform: translateX(-50%); width: 240px; }
         #bloque-derecha { left: calc(50% + 950px); transform: translateX(-50%); width: 240px; }
 
-        /* EVITAR EL ARRASTRE NATIVO DEL NAVEGADOR EN IMÁGENES */
         img { pointer-events: none; -webkit-user-drag: none; user-select: none; }
 
-        /* EFECTOS EXCLUSIVOS DE LEVITACIÓN EN EJE VERTICAL (TRANSFORM LIBRE) */
-        .flotador-foto { animation: levitarFoto 4s ease-in-out infinite; }
-        .flotador-prop1 { animation: levitarProp1 4.5s ease-in-out infinite; }
-        .flotador-prop2 { animation: levitarProp2 3.5s ease-in-out infinite; }
+        /* ========================================================
+           ✨ SUBCONTENEDORES: COMBINACIÓN DE FLOTADO + EFECTO JIGGLE DE IPHONE
+           ======================================================== */
+        .flotador-foto { animation: jiggleFlotanteFoto 3s ease-in-out infinite; }
+        .flotador-prop1 { animation: jiggleFlotanteProp1 3.4s ease-in-out infinite; }
+        .flotador-prop2 { animation: jiggleFlotanteProp2 2.8s ease-in-out infinite; }
 
         .tarjeta-grafica { width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
         .tarjeta-propuesta { width: 240px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
-        @keyframes levitarFoto {
-            0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(0.5deg); }
-            100% { transform: translateY(0px) rotate(0deg); }
+        /* Animación para tu foto: Sube/Baja y tiembla sutilmente a los lados */
+        @keyframes jiggleFlotanteFoto {
+            0% { transform: translateY(0px) rotate(-1deg); }
+            25% { transform: translateY(-7px) rotate(1deg); }
+            50% { transform: translateY(-15px) rotate(-0.5deg); }
+            75% { transform: translateY(-8px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(-1deg); }
         }
-        @keyframes levitarProp1 {
-            0% { transform: translateY(-5px) rotate(-0.3deg); }
-            50% { transform: translateY(12px) rotate(0.4deg); }
-            100% { transform: translateY(-5px) rotate(-0.3deg); }
+
+        /* Animación Propuesta 1: Ritmo desfasado para emular físicas independientes */
+        @keyframes jiggleFlotanteProp1 {
+            0% { transform: translateY(-5px) rotate(1deg); }
+            25% { transform: translateY(3px) rotate(-0.8deg); }
+            50% { transform: translateY(12px) rotate(1deg); }
+            75% { transform: translateY(4px) rotate(-0.5deg); }
+            100% { transform: translateY(-5px) rotate(1deg); }
         }
-        @keyframes levitarProp2 {
-            0% { transform: translateY(8px) rotate(0.2deg); }
-            50% { transform: translateY(-10px) rotate(-0.5deg); }
-            100% { transform: translateY(8px) rotate(0.2deg); }
+
+        /* Animación Propuesta 2 */
+        @keyframes jiggleFlotanteProp2 {
+            0% { transform: translateY(8px) rotate(-0.5deg); }
+            25% { transform: translateY(-2px) rotate(1deg); }
+            50% { transform: translateY(-10px) rotate(-0.8deg); }
+            75% { transform: translateY(-1px) rotate(0.5deg); }
+            100% { transform: translateY(8px) rotate(-0.5deg); }
         }
 
         /* Pantalla de Bienvenida */
@@ -92,6 +105,7 @@
         <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
+    <!-- Mensaje solicitado en pantalla libre -->
     <div id="guia-texto" class="instrucciones">
         Desplace a la derecha o izquierda para conocer las propuestas
     </div>
@@ -159,21 +173,24 @@
             const visor = document.getElementById('visor-ar');
             const lienzo = document.getElementById('lienzo-360');
 
+            // Asegurar que el lienzo arranque estrictamente en la coordenada 0 de la pantalla
+            lienzo.style.left = '0px';
+
             visor.addEventListener('touchstart', function(e) {
-                toqueInicialX = e.touches[0].clientX;
+                toqueInicialX = e.touches.clientX;
                 posicionInicialLienzo = posicionActual;
                 lienzo.style.transition = 'none';
             }, { passive: true });
 
             visor.addEventListener('touchmove', function(e) {
-                let distanciaDesplazada = e.touches[0].clientX - toqueInicialX;
+                let distanciaDesplazada = e.touches.clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
-                // Límites estrictos de arrastre
+                // Límites simétricos perfectos de arrastre (-1150px a 1150px)
+                // Permite arrastrar la misma distancia hacia ambos lados para revelar las dos propuestas por igual
                 if (posicionActual > 1150) posicionActual = 1150;   
                 if (posicionActual < -1150) posicionActual = -1150; 
 
-                // TRUCO MAESTRO: Desplazar usando 'left' elimina el bloqueo de animación en celulares
                 lienzo.style.left = posicionActual + 'px';
             }, { passive: true });
 
