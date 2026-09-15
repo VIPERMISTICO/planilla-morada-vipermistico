@@ -7,16 +7,16 @@
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* CÁMARA REAL: El entorno del hospital/oficina de fondo */
+        /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Ventana fija de recorte */
+        /* VISOR AR: Ventana de recorte que esconde el contenido lateral */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
             overflow: hidden; display: flex; align-items: center; justify-content: center; pointer-events: none;
         }
         
-        /* LIENZO PANORÁMICO: 3000px de ancho para ocultar las propuestas a los lados */
+        /* LIENZO PANORÁMICO: 3000px de ancho para ocultar las propuestas lejos en los lados */
         #lienzo-360 {
             position: absolute; width: 3000px; height: 100%;
             display: flex; align-items: center; justify-content: center;
@@ -27,7 +27,7 @@
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        /* Tu foto de campaña: Justo al centro al frente */
+        /* Tu foto de campaña: Al centro al frente */
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
         #bloque-centro img { width: 160px; height: auto; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
 
@@ -65,14 +65,15 @@
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para activar el efecto Pokémon Go, presiona el botón y permite el acceso a la cámara y sensores.</p>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y activar el efecto de movimiento.</p>
         <button class="btn-activar" onclick="solicitarAccesoTotal()">VER PROPUESTAS</button>
     </div>
 
     <div id="guia-texto" class="instrucciones">
-        Gira tu cuerpo hacia los lados para buscar las propuestas en tu espacio.
+        Gira tu cuerpo a los lados para buscar las propuestas en tu espacio.
     </div>
 
+    <!-- Cámara trasera nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
     <div id="visor-ar">
@@ -92,11 +93,13 @@
 
     <script>
         let inicioAlpha = null;
+        let alphaActual = 0;
+        const lienzo = document.getElementById('lienzo-360');
 
         function solicitarAccesoTotal() {
             const video = document.getElementById('webcam');
             
-            // 1. Activar cámara nativa
+            // 1. Encender cámara nativa
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -105,20 +108,23 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // 2. Destrabar los sensores de movimiento (Indispensable para iPhone/iOS modernos)
+                // 2. Activar sensores con compatibilidad estricta para iPhone (iOS)
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // Forzar ventana emergente de permisos de Apple
                     DeviceOrientationEvent.requestPermission()
                     .then(permissionState => {
                         if (permissionState === 'granted') {
-                            activarSensoresFisicos();
+                            vincularSensoresFisicos();
+                            actualizarAnimacion();
                         } else {
-                            alert("Para el efecto de giro es necesario aceptar los sensores. Recarga la página.");
+                            alert("Para el efecto estilo Pokémon Go, debes permitir el acceso a los sensores de movimiento. Recarga la página.");
                         }
                     })
                     .catch(console.error);
                 } else {
-                    // Android y navegadores estándar no ponen trabas, entran directo
-                    activarSensoresFisicos();
+                    // Android y navegadores estándar entran directo sin trabas
+                    vincularSensoresFisicos();
+                    actualizarAnimacion();
                 }
 
                 document.getElementById('pantalla-inicio').style.display = 'none';
@@ -129,29 +135,35 @@
             });
         }
 
-        function activarSensoresFisicos() {
-            const lienzo = document.getElementById('lienzo-360');
-            
+        function vincularSensoresFisicos() {
             window.addEventListener('deviceorientation', function(event) {
-                // event.alpha mide el giro de brújula (gira tu cuerpo en 360 grados)
                 if (event.alpha !== null) {
                     if (inicioAlpha === null) {
-                        inicioAlpha = event.alpha; // Guardamos la dirección en la que apuntaba al dar clic
+                        inicioAlpha = event.alpha; // Guarda hacia dónde mirabas al dar clic
                     }
-                    
-                    let cambioAngulo = event.alpha - inicioAlpha;
-                    
-                    // Normalizar el ángulo para evitar saltos bruscos
-                    if (cambioAngulo > 180) cambioAngulo -= 360;
-                    if (cambioAngulo < -180) cambioAngulo += 360;
-                    
-                    // Ajuste de sensibilidad matemática: 
-                    // Cada 1 grado que gira el cuerpo del médico, el lienzo se desplaza 14 píxeles en sentido opuesto.
-                    let desplazamientoPixeles = cambioAngulo * 14;
-                    
-                    lienzo.style.transform = 'translateX(' + desplazamientoPixeles + 'px)';
+                    alphaActual = event.alpha;
                 }
             }, true);
+        }
+
+        // BUCLE DE ANIMACIÓN: Forzado por hardware continuo
+        function actualizarAnimacion() {
+            if (inicioAlpha !== null) {
+                let cambioAngulo = alphaActual - inicioAlpha;
+                
+                // Normalizar ángulo entre -180 y 180 grados
+                if (cambioAngulo > 180) cambioAngulo -= 360;
+                if (cambioAngulo < -180) cambioAngulo += 360;
+                
+                // Cada grado físico desplaza 15 píxeles el lienzo panorámico
+                let desplazamientoPixeles = cambioAngulo * 15;
+                
+                // Aplicar transformación por hardware acelerado
+                lienzo.style.transform = 'translateX(' + desplazamientoPixeles + 'px)';
+            }
+            
+            // Refrescar el cuadro continuamente en segundo plano
+            requestAnimationFrame(actualizarAnimacion);
         }
     </script>
 </body>
