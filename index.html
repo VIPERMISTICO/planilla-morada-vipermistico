@@ -10,34 +10,35 @@
         /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Ventana de captura táctil total */
+        /* VISOR AR: Ventana de captura táctil que flota arriba de la cámara */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO LIBRE: Forzado a nacer perfectamente centrado (left: 0) */
+        /* LIENZO PANORÁMICO: Centrado de forma nativa en el medio de la pantalla (translate3d) */
         #lienzo-360 {
-            position: absolute; width: 3000px; height: 100%; left: 0px;
+            position: absolute; width: 3000px; height: 100%;
             display: flex; align-items: center; justify-content: center;
-            will-change: left;
+            will-change: transform;
+            transform: translate3d(0px, 0px, 0px);
         }
 
-        /* CONFIGURACIÓN BASE DE BLOQUES EN EL ESPACIO HORIZONTAL */
+        /* CONFIGURACIÓN DE LOS CONTENEDORES EN EL ESPACIO HORIZONTAL */
         .bloque-campana {
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
             user-select: none; -webkit-user-select: none;
         }
 
-        /* Distancias simétricas de 950px respecto al centro exacto */
-        #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
-        #bloque-izquierda { left: calc(50% - 950px); transform: translateX(-50%); width: 240px; }
-        #bloque-derecha { left: calc(50% + 950px); transform: translateX(-50%); width: 240px; }
+        /* Separación de 950px fijos a los lados del centro */
+        #bloque-centro { left: 50%; transform: translate3d(-50%, 0, 0); width: 260px; }
+        #bloque-izquierda { left: calc(50% - 950px); transform: translate3d(-50%, 0, 0); width: 240px; }
+        #bloque-derecha { left: calc(50% + 950px); transform: translate3d(-50%, 0, 0); width: 240px; }
 
         img { pointer-events: none; -webkit-user-drag: none; user-select: none; }
 
         /* ========================================================
-           ✨ SUBCONTENEDORES: COMBINACIÓN DE FLOTADO + EFECTO JIGGLE DE IPHONE
+           ✨ ANIMACIONES EXCLUSIVAS: LEVITACIÓN + EFECTO JIGGLE DE IPHONE
            ======================================================== */
         .flotador-foto { animation: jiggleFlotanteFoto 3s ease-in-out infinite; }
         .flotador-prop1 { animation: jiggleFlotanteProp1 3.4s ease-in-out infinite; }
@@ -46,31 +47,31 @@
         .tarjeta-grafica { width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
         .tarjeta-propuesta { width: 240px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
-        /* Animación para tu foto: Sube/Baja y tiembla sutilmente a los lados */
+        /* Animación para tu foto: Sube/Baja y se balancea a los lados (Jiggle) */
         @keyframes jiggleFlotanteFoto {
-            0% { transform: translateY(0px) rotate(-1deg); }
-            25% { transform: translateY(-7px) rotate(1deg); }
-            50% { transform: translateY(-15px) rotate(-0.5deg); }
-            75% { transform: translateY(-8px) rotate(1deg); }
-            100% { transform: translateY(0px) rotate(-1deg); }
+            0% { transform: translateY(0px) rotate(-1.5deg); }
+            25% { transform: translateY(-6px) rotate(1.5deg); }
+            50% { transform: translateY(-14px) rotate(-0.8deg); }
+            75% { transform: translateY(-7px) rotate(1.5deg); }
+            100% { transform: translateY(0px) rotate(-1.5deg); }
         }
 
-        /* Animación Propuesta 1: Ritmo desfasado para emular físicas independientes */
+        /* Animación Propuesta 1: Desfasada para dar sensación de libertad */
         @keyframes jiggleFlotanteProp1 {
-            0% { transform: translateY(-5px) rotate(1deg); }
-            25% { transform: translateY(3px) rotate(-0.8deg); }
-            50% { transform: translateY(12px) rotate(1deg); }
-            75% { transform: translateY(4px) rotate(-0.5deg); }
-            100% { transform: translateY(-5px) rotate(1deg); }
+            0% { transform: translateY(-4px) rotate(1.2deg); }
+            25% { transform: translateY(4px) rotate(-1deg); }
+            50% { transform: translateY(13px) rotate(1.2deg); }
+            75% { transform: translateY(5px) rotate(-0.8deg); }
+            100% { transform: translateY(-4px) rotate(1.2deg); }
         }
 
         /* Animación Propuesta 2 */
         @keyframes jiggleFlotanteProp2 {
-            0% { transform: translateY(8px) rotate(-0.5deg); }
-            25% { transform: translateY(-2px) rotate(1deg); }
-            50% { transform: translateY(-10px) rotate(-0.8deg); }
-            75% { transform: translateY(-1px) rotate(0.5deg); }
-            100% { transform: translateY(8px) rotate(-0.5deg); }
+            0% { transform: translateY(6px) rotate(-0.8deg); }
+            25% { transform: translateY(-3px) rotate(1.3deg); }
+            50% { transform: translateY(-11px) rotate(-1deg); }
+            75% { transform: translateY(-2px) rotate(0.6deg); }
+            100% { transform: translateY(6px) rotate(-0.8deg); }
         }
 
         /* Pantalla de Bienvenida */
@@ -173,9 +174,6 @@
             const visor = document.getElementById('visor-ar');
             const lienzo = document.getElementById('lienzo-360');
 
-            // Asegurar que el lienzo arranque estrictamente en la coordenada 0 de la pantalla
-            lienzo.style.left = '0px';
-
             visor.addEventListener('touchstart', function(e) {
                 toqueInicialX = e.touches.clientX;
                 posicionInicialLienzo = posicionActual;
@@ -186,16 +184,16 @@
                 let distanciaDesplazada = e.touches.clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
-                // Límites simétricos perfectos de arrastre (-1150px a 1150px)
-                // Permite arrastrar la misma distancia hacia ambos lados para revelar las dos propuestas por igual
+                // Límites de arrastre horizontal libres para navegar
                 if (posicionActual > 1150) posicionActual = 1150;   
                 if (posicionActual < -1150) posicionActual = -1150; 
 
-                lienzo.style.left = posicionActual + 'px';
+                // TRUCO DEFINITIVO PARA SAFARI: Usamos translate3d acelerado por GPU
+                lienzo.style.transform = 'translate3d(' + posicionActual + 'px, 0px, 0px)';
             }, { passive: true });
 
             visor.addEventListener('touchend', function() {
-                lienzo.style.transition = 'left 0.2s ease-out';
+                lienzo.style.transition = 'transform 0.2s ease-out';
             }, { passive: true });
         }
     </script>
