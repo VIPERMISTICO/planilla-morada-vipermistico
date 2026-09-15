@@ -16,7 +16,7 @@
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO LIBRE: 3000px de ancho para esparcir el contenido en el espacio */
+        /* LIENZO PANORÁMICO LIBRE: 3000px de ancho para esparcir el contenido */
         #lienzo-360 {
             position: absolute; width: 3000px; height: 100%;
             display: flex; align-items: center; justify-content: center;
@@ -29,15 +29,41 @@
 
         /* Tu foto de campaña: Centrada perfectamente al frente al iniciar */
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
-        #bloque-centro img { width: 160px; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        #bloque-centro img { 
+            width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); 
+            animation: levitarFoto 4s ease-in-out infinite; /* EFECTO FLOTANTE */
+        }
 
         /* Propuesta 1: Escondida a 900 píxeles hacia la izquierda */
         #bloque-izquierda { left: calc(50% - 900px); transform: translateX(-50%); width: 240px; }
+        #bloque-izquierda img { animation: levitarPropuesta1 4.5s ease-in-out infinite; /* Tiempo desfasado para realismo */ }
 
         /* Propuesta 2: Escondida a 900 píxeles hacia la derecha */
         #bloque-derecha { left: calc(50% + 900px); transform: translateX(-50%); width: 240px; }
+        #bloque-derecha img { animation: levitarPropuesta2 3.5s ease-in-out infinite; /* Tiempo desfasado para realismo */ }
 
-        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+
+        /* ========================================================
+           ✨ ANIMACIONES MATEMÁTICAS DE LEVITACIÓN EN EL ESPACIO (CSS)
+           ======================================================== */
+        @keyframes levitarFoto {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(0.5deg); } /* Sube 15px y rota un poquito */
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @keyframes levitarPropuesta1 {
+            0% { transform: translateY(-5px) rotate(-0.3deg); }
+            50% { transform: translateY(12px) rotate(0.4deg); } /* Se balancea al ritmo opuesto */
+            100% { transform: translateY(-5px) rotate(-0.3deg); }
+        }
+
+        @keyframes levitarPropuesta2 {
+            0% { transform: translateY(8px) rotate(0.2deg); }
+            50% { transform: translateY(-10px) rotate(-0.5deg); }
+            100% { transform: translateY(8px) rotate(0.2deg); }
+        }
 
         /* Pantalla de Bienvenida */
         #pantalla-inicio {
@@ -52,7 +78,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
         
-        /* Mensaje limpio flotante solicitado */
+        /* Mensaje limpio flotante */
         .instrucciones {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
             background: rgba(74, 20, 140, 0.95); color: white; padding: 14px 24px;
@@ -92,7 +118,7 @@
             <!-- CONTENIDO CENTRAL: Tu foto real -->
             <div id="bloque-centro" class="bloque-campana">
                 <img src="./assets/mi-foto.png" alt="Candidato">
-                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 5px 14px; border-radius: 10px; margin-top: 8px; font-size: 14px;">Planilla Morada</p>
+                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 5px 14px; border-radius: 10px; margin-top: 15px; font-size: 14px;">Planilla Morada</p>
             </div>
 
             <!-- CONTENIDO DERECHO: Propuesta 2 (Oculta al iniciar) -->
@@ -136,25 +162,23 @@
             const lienzo = document.getElementById('lienzo-360');
 
             visor.addEventListener('touchstart', function(e) {
-                toqueInicialX = e.touches[0].clientX;
+                toqueInicialX = e.touches.clientX;
                 posicionInicialLienzo = posicionActual;
-                // Desactivar transiciones durante el arrastre directo para que sea instantáneo al dedo
                 lienzo.style.transition = 'none';
             }, { passive: true });
 
             visor.addEventListener('touchmove', function(e) {
-                let distanciaDesplazada = e.touches[0].clientX - toqueInicialX;
+                let distanciaDesplazada = e.touches.clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
-                // Límites máximos de arrastre para no dejar la pantalla en blanco
-                if (posicionActual > 1100) posicionActual = 1100;   // Límite izquierdo
-                if (posicionActual < -1100) posicionActual = -1100; // Límite derecho
+                // Límites de arrastre ajustados proporcionalmente
+                if (posicionActual > 1150) posicionActual = 1150;   
+                if (posicionActual < -1150) posicionActual = -1150; 
 
                 lienzo.style.transform = 'translateX(' + posicionActual + 'px)';
             }, { passive: true });
 
             visor.addEventListener('touchend', function() {
-                // Devolver una transición suave cuando el usuario suelta el dedo
                 lienzo.style.transition = 'transform 0.2s ease-out';
             }, { passive: true });
         }
