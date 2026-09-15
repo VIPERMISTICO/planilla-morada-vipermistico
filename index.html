@@ -6,40 +6,16 @@
     <title>Planilla Morada AR</title>
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
-        
-        /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-        
-        /* VISOR AR: Ventana de recorte que esconde el contenido lateral */
-        #visor-ar { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
-            overflow: hidden; display: flex; align-items: center; justify-content: center; pointer-events: none;
-        }
-        
-        /* LIENZO PANORÁMICO: 3000px de ancho para ocultar las propuestas lejos en los lados */
-        #lienzo-360 {
-            position: absolute; width: 3000px; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            will-change: transform; transform: translateX(0px);
-        }
-
-        .bloque-campana {
-            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        /* Tu foto de campaña: Al centro al frente */
+        #visor-ar { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; overflow: hidden; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        #lienzo-360 { position: absolute; width: 3000px; height: 100%; display: flex; align-items: center; justify-content: center; will-change: transform; transform: translateX(0px); }
+        .bloque-campana { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
         #bloque-centro img { width: 160px; height: auto; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-
-        /* Propuesta 1: Escondida hacia la izquierda en el espacio */
         #bloque-izquierda { left: calc(50% - 950px); transform: translateX(-50%); width: 240px; }
-
-        /* Propuesta 2: Escondida hacia la derecha en el espacio */
         #bloque-derecha { left: calc(50% + 950px); transform: translateX(-50%); width: 240px; }
-
         .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-
-        /* Pantalla de Bienvenida */
+        
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -61,19 +37,17 @@
 </head>
 <body>
 
-    <!-- Pantalla de Bienvenida -->
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y activar el efecto de movimiento.</p>
-        <button class="btn-activar" onclick="solicitarAccesoTotal()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para otorgar permisos de movimiento y cámara en tu iPhone.</p>
+        <button class="btn-activar" onclick="desbloquearSensoresPrimero()">VER PROPUESTAS</button>
     </div>
 
     <div id="guia-texto" class="instrucciones">
         Gira tu cuerpo a los lados para buscar las propuestas en tu espacio.
     </div>
 
-    <!-- Cámara trasera nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
     <div id="visor-ar">
@@ -96,10 +70,31 @@
         let alphaActual = 0;
         const lienzo = document.getElementById('lienzo-360');
 
-        function solicitarAccesoTotal() {
+        function desbloquearSensoresPrimero() {
+            // PASO 1: Comprobar y forzar el giroscopio de inmediato en el milisegundo del clic
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        vincularSensoresFisicos();
+                        activarCamaraNativa(); // Si acepta, abrimos la cámara
+                    } else {
+                        alert("Para vivir la experiencia tipo Pokémon Go debes permitir los sensores.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Fallo de permisos de Apple:", err);
+                    activarCamaraNativa(); // Intentar bypass
+                });
+            } else {
+                // Teléfonos comunes sin restricciones
+                vincularSensoresFisicos();
+                activarCamaraNativa();
+            }
+        }
+
+        function activarCamaraNativa() {
             const video = document.getElementById('webcam');
-            
-            // 1. Encender cámara nativa
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -108,27 +103,12 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // 2. Activar sensores con compatibilidad estricta para iPhone (iOS)
-                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    // Forzar ventana emergente de permisos de Apple
-                    DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
-                            vincularSensoresFisicos();
-                            actualizarAnimacion();
-                        } else {
-                            alert("Para el efecto estilo Pokémon Go, debes permitir el acceso a los sensores de movimiento. Recarga la página.");
-                        }
-                    })
-                    .catch(console.error);
-                } else {
-                    // Android y navegadores estándar entran directo sin trabas
-                    vincularSensoresFisicos();
-                    actualizarAnimacion();
-                }
-
+                // Desvanecer pantallas de carga
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
+                
+                // Iniciar el motor de animación continua
+                actualizarAnimacion();
             })
             .catch(function(err) {
                 alert("Se requieren permisos de cámara para activar la experiencia.");
@@ -139,30 +119,22 @@
             window.addEventListener('deviceorientation', function(event) {
                 if (event.alpha !== null) {
                     if (inicioAlpha === null) {
-                        inicioAlpha = event.alpha; // Guarda hacia dónde mirabas al dar clic
+                        inicioAlpha = event.alpha; 
                     }
                     alphaActual = event.alpha;
                 }
             }, true);
         }
 
-        // BUCLE DE ANIMACIÓN: Forzado por hardware continuo
         function actualizarAnimacion() {
             if (inicioAlpha !== null) {
                 let cambioAngulo = alphaActual - inicioAlpha;
-                
-                // Normalizar ángulo entre -180 y 180 grados
                 if (cambioAngulo > 180) cambioAngulo -= 360;
                 if (cambioAngulo < -180) cambioAngulo += 360;
                 
-                // Cada grado físico desplaza 15 píxeles el lienzo panorámico
                 let desplazamientoPixeles = cambioAngulo * 15;
-                
-                // Aplicar transformación por hardware acelerado
                 lienzo.style.transform = 'translateX(' + desplazamientoPixeles + 'px)';
             }
-            
-            // Refrescar el cuadro continuamente en segundo plano
             requestAnimationFrame(actualizarAnimacion);
         }
     </script>
