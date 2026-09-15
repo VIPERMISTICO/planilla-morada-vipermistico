@@ -7,45 +7,37 @@
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* CÁMARA REAL: El entorno de fondo */
+        /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR PRINCIPAL: Actúa como ventana receptora de los gestos táctiles (z-index alto) */
+        /* VISOR AR: Ventana de recorte que recibe los toques directamente */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO: Organiza las 3 vistas una al lado de la otra de forma horizontal */
+        /* LIENZO PANORÁMICO LIBRE: 3000px de ancho para esparcir el contenido en el espacio */
         #lienzo-360 {
-            position: absolute; width: 300%; height: 100%;
+            position: absolute; width: 3000px; height: 100%;
             display: flex; align-items: center; justify-content: center;
             will-change: transform; transform: translateX(0px);
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Deslizamiento fluido premium */
         }
 
-        /* CONFIGURACIÓN INDIVIDUAL PARA CADA CONTENIDO DE CAMPAÑA */
-        .seccion-vista {
-            width: 33.333%; height: 100%; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; box-sizing: border-box; padding: 24px;
+        .bloque-campana {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        .tarjeta-grafica {
-            width: 85%; max-width: 290px; height: auto; border-radius: 16px;
-            box-shadow: 0 12px 35px rgba(0,0,0,0.6); background: rgba(0,0,0,0.15);
-        }
+        /* Tu foto de campaña: Centrada perfectamente al frente al iniciar */
+        #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
+        #bloque-centro img { width: 160px; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        /* INDICADORES DE PÁGINA (PUNTOS INFERIORES) */
-        .contenedor-puntos {
-            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; z-index: 99; background: rgba(74, 20, 140, 0.85);
-            padding: 8px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .punto {
-            width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.4);
-            transition: background 0.3s, transform 0.3s;
-        }
-        .punto.activo { background: #00e676; transform: scale(1.2); }
+        /* Propuesta 1: Escondida a 900 píxeles hacia la izquierda */
+        #bloque-izquierda { left: calc(50% - 900px); transform: translateX(-50%); width: 240px; }
+
+        /* Propuesta 2: Escondida a 900 píxeles hacia la derecha */
+        #bloque-derecha { left: calc(50% + 900px); transform: translateX(-50%); width: 240px; }
+
+        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
         /* Pantalla de Bienvenida */
         #pantalla-inicio {
@@ -59,6 +51,15 @@
             padding: 16px 32px; border: none; border-radius: 30px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
+        
+        /* Mensaje limpio flotante solicitado */
+        .instrucciones {
+            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
+            background: rgba(74, 20, 140, 0.95); color: white; padding: 14px 24px;
+            border-radius: 25px; font-size: 13px; text-align: center; z-index: 99;
+            width: 80%; max-width: 310px; font-weight: bold; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            line-height: 1.3;
+        }
     </style>
 </head>
 <body>
@@ -67,53 +68,49 @@
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y explorar las propuestas deslizando tu dedo.</p>
-        <button class="btn-activar" onclick="inicializarSistemaTactil()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y comenzar.</p>
+        <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
-    /* Puntos guía inferiores */
-    <div class="contenedor-puntos">
-        <div id="p0" class="punto activo"></div>
-        <div id="p1" class="punto"></div>
-        <div id="p2" class="punto"></div>
+    <!-- Mensaje solicitado en pantalla libre -->
+    <div id="guia-texto" class="instrucciones">
+        Desplace a la derecha o izquierda para conocer las propuestas
     </div>
 
     <!-- Cámara trasera nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <!-- Escenario AR de Arrastre -->
+    <!-- Escenario Realidad Aumentada Panorámico Libre -->
     <div id="visor-ar">
         <div id="lienzo-360">
             
-            <!-- VISTA 1: Tu fotografía central -->
-            <div class="seccion-vista">
-                <img class="tarjeta-grafica" src="./assets/mi-foto.png" alt="Candidato">
-                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 6px 18px; border-radius: 20px; margin-top: 15px; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">Planilla Morada</p>
-            </div>
-            
-            <!-- VISTA 2: Propuesta 1 -->
-            <div class="seccion-vista">
-                <img class="tarjeta-grafica" src="./assets/propuesta1.png" alt="Propuesta 1">
+            <!-- CONTENIDO IZQUIERDO: Propuesta 1 (Oculta al iniciar) -->
+            <div id="bloque-izquierda" class="bloque-campana">
+                <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
             </div>
 
-            <!-- VISTA 3: Propuesta 2 -->
-            <div class="seccion-vista">
-                <img class="tarjeta-grafica" src="./assets/propuesta2.png" alt="Propuesta 2">
+            <!-- CONTENIDO CENTRAL: Tu foto real -->
+            <div id="bloque-centro" class="bloque-campana">
+                <img src="./assets/mi-foto.png" alt="Candidato">
+                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 5px 14px; border-radius: 10px; margin-top: 8px; font-size: 14px;">Planilla Morada</p>
+            </div>
+
+            <!-- CONTENIDO DERECHO: Propuesta 2 (Oculta al iniciar) -->
+            <div id="bloque-derecha" class="bloque-campana">
+                <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
             </div>
 
         </div>
     </div>
 
     <script>
-        let vistaActual = 0; // 0 = Foto, 1 = Propuesta 1, 2 = Propuesta 2
-        let xInicial = 0;
-        let xDesplazamiento = 0;
-        const lienzo = document.getElementById('lienzo-360');
+        let posicionActual = 0;
+        let toqueInicialX = 0;
+        let posicionInicialLienzo = 0;
 
-        function inicializarSistemaTactil() {
+        function inicializarSistema() {
             const video = document.getElementById('webcam');
             
-            // Encender únicamente la cámara trasera
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -122,60 +119,44 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // Activar la escucha de gestos en pantalla completa
-                configurarArrastre();
+                configurarControlTactilLibre();
 
                 document.getElementById('pantalla-inicio').style.display = 'none';
+                document.getElementById('guia-texto').style.display = 'block';
             })
             .catch(function(err) {
-                // Si están en PC o bloquean la cámara, igual les permitimos leer las propuestas
                 document.getElementById('pantalla-inicio').style.display = 'none';
-                configurarArrastre();
+                document.getElementById('guia-texto').style.display = 'block';
+                configurarControlTactilLibre();
             });
         }
 
-        function configurarArrastre() {
+        function configurarControlTactilLibre() {
             const visor = document.getElementById('visor-ar');
+            const lienzo = document.getElementById('lienzo-360');
 
-            // Capturar el momento en que el dedo toca la pantalla
             visor.addEventListener('touchstart', function(e) {
-                xInicial = e.touches[0].clientX;
-                xDesplazamiento = 0;
+                toqueInicialX = e.touches[0].clientX;
+                posicionInicialLienzo = posicionActual;
+                // Desactivar transiciones durante el arrastre directo para que sea instantáneo al dedo
+                lienzo.style.transition = 'none';
             }, { passive: true });
 
-            // Registrar el arrastre del dedo en tiempo real
             visor.addEventListener('touchmove', function(e) {
-                xDesplazamiento = e.touches[0].clientX - xInicial;
+                let distanciaDesplazada = e.touches[0].clientX - toqueInicialX;
+                posicionActual = posicionInicialLienzo + distanciaDesplazada;
+
+                // Límites máximos de arrastre para no dejar la pantalla en blanco
+                if (posicionActual > 1100) posicionActual = 1100;   // Límite izquierdo
+                if (posicionActual < -1100) posicionActual = -1100; // Límite derecho
+
+                lienzo.style.transform = 'translateX(' + posicionActual + 'px)';
             }, { passive: true });
 
-            // Calcular el cambio de página al despegar el dedo (efecto Swipe amigable)
             visor.addEventListener('touchend', function() {
-                // Umbral mínimo de movimiento: 50 píxeles para cambiar de tarjeta
-                if (Math.abs(xDesplazamiento) > 50) {
-                    if (xDesplazamiento > 0 && vistaActual > 0) {
-                        vistaActual--; // Desliza a la derecha (vuelve a la tarjeta anterior)
-                    } else if (xDesplazamiento < 0 && vistaActual < 2) {
-                        vistaActual++; // Desliza a la izquierda (avanza a la siguiente propuesta)
-                    }
-                    actualizarPosicionLienzo();
-                }
+                // Devolver una transición suave cuando el usuario suelta el dedo
+                lienzo.style.transition = 'transform 0.2s ease-out';
             }, { passive: true });
-        }
-
-        function actualizarPosicionLienzo() {
-            // Cada sección ocupa exactamente un tercio (33.333%) de la tira panorámica
-            let desplazamientoPorcentaje = -vistaActual * 33.333;
-            lienzo.style.transform = 'translateX(' + desplazamientoPorcentaje + '%)';
-
-            // Actualizar el encendido de los puntos guía inferiores
-            for (let i = 0; i <= 2; i++) {
-                const punto = document.getElementById('p' + i);
-                if (i === vistaActual) {
-                    punto.classList.add('activo');
-                } else {
-                    punto.classList.remove('activo');
-                }
-            }
         }
     </script>
 </body>
