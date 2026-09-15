@@ -4,56 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>Planilla Morada AR</title>
-    
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* CÁMARA REAL: Fondo absoluto */
+        /* CÁMARA REAL: Fondo absoluto de la pantalla */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* ESCENARIO 3D INTERNO */
-        #universo-ar { 
+        /* VISOR AR: Ventana de recorte que esconde el contenido lateral */
+        #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
-            display: flex; align-items: center; justify-content: center; pointer-events: none;
-            perspective: 600px; /* Genera profundidad tridimensional */
+            overflow: hidden; display: flex; align-items: center; justify-content: center; pointer-events: none;
         }
         
-        /* ROTADOR GIROSCÓPICO: Gira todo el cuarto al mover el cuerpo */
-        #eje-movimiento {
-            position: relative; width: 100%; height: 100%;
-            transform-style: preserve-3d;
-            will-change: transform;
+        /* LIENZO PANORÁMICO MÓVIL: Mide 3000px para que las propuestas queden FUERA de la pantalla */
+        #lienzo-360 {
+            position: absolute; width: 3000px; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            will-change: transform; transform: translateX(0px);
         }
 
-        /* DISEÑO DE IMÁGENES EN MULTI-DIRECCIÓN */
-        .propuesta-3d {
-            position: absolute; top: 50%; left: 50%;
-            backface-visibility: hidden;
-            transform-style: preserve-3d;
-            max-width: none;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            border-radius: 10px;
+        /* CONFIGURACIÓN GRÁFICA DE LAS IMÁGENES SEPARADAS */
+        .bloque-campana {
+            position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        /* FOTO PRINCIPAL: Justo en el centro al frente */
-        #mi-foto {
-            width: 150px; height: auto;
-            transform: translate(-50%, -60%) rotateY(0deg) translateZ(-350px);
+        /* 1. TU FOTO DE CAMPAÑA: Justo al frente en el centro exacto */
+        #bloque-centro {
+            left: 50%; transform: translateX(-50%); width: 260px;
+        }
+        #bloque-centro img { width: 160px; height: auto; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+
+        /* 2. PROPUESTA 1 (Escondida a la izquierda): Empujada a 900 píxeles fuera del teléfono */
+        #bloque-izquierda {
+            left: calc(50% - 900px); transform: translateX(-50%); width: 240px;
         }
 
-        /* PROPUESTA 1 (Pokémon Go Izquierda): Gira el celular un poco a la izquierda para leerla */
-        #propuesta-1 {
-            width: 200px; height: auto;
-            transform: translate(-50%, -40%) rotateY(45deg) translateZ(-350px);
+        /* 3. PROPUESTA 2 (Escondida a la derecha): Empujada a 900 píxeles fuera del teléfono */
+        #bloque-derecha {
+            left: calc(50% + 900px); transform: translateX(-50%); width: 240px;
         }
 
-        /* PROPUESTA 2 (Pokémon Go Derecha): Gira el celular un poco a la derecha para descubrirla */
-        #propuesta-2 {
-            width: 200px; height: auto;
-            transform: translate(-50%, -40%) rotateY(-45deg) translateZ(-350px);
-        }
+        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
 
-        /* Interfaz de bienvenida */
+        /* Pantalla de Bienvenida */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -79,31 +72,47 @@
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y buscar el contenido flotando.</p>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Presiona el botón para encender tu cámara y buscar tus propuestas.</p>
         <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
     <div id="guia-texto" class="instrucciones">
-        Gira tu celular a los lados para descubrir las propuestas.
+        Gira tu cuerpo a los lados para buscar las propuestas en tu espacio.
     </div>
 
-    <!-- Video nativo -->
+    <!-- Cámara trasera nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <!-- Espacio Virtual Circular -->
-    <div id="universo-ar">
-        <div id="eje-movimiento">
-            <img id="mi-foto" class="propuesta-3d" src="./assets/mi-foto.png" alt="Candidato">
-            <img id="propuesta-1" class="propuesta-3d" src="./assets/propuesta1.png" alt="Propuesta 1">
-            <img id="propuesta-2" class="propuesta-3d" src="./assets/propuesta2.png" alt="Propuesta 2">
+    <!-- Escenario Realidad Aumentada Panorámico -->
+    <div id="visor-ar">
+        <div id="lienzo-360">
+            
+            <!-- CONTENIDO CENTRAL: Tu foto -->
+            <div id="bloque-centro" class="bloque-campana">
+                <img src="./assets/mi-foto.png" alt="Candidato">
+                <p style="color: white; font-weight: bold; background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 10px; margin-top: 8px;">Candidato</p>
+            </div>
+            
+            <!-- CONTENIDO IZQUIERDO: Propuesta 1 (Oculta al iniciar) -->
+            <div id="bloque-izquierda" class="bloque-campana">
+                <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
+            </div>
+
+            <!-- CONTENIDO DERECHO: Propuesta 2 (Oculta al iniciar) -->
+            <div id="bloque-derecha" class="bloque-campana">
+                <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
+            </div>
+
         </div>
     </div>
 
     <script>
+        let inicioAlpha = null;
+
         function inicializarSistema() {
             const video = document.getElementById('webcam');
             
-            // Encender cámara
+            // Encender cámara trasera nativa
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -112,31 +121,45 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // Activar sensores
+                // Activar e inicializar los sensores de orientación física
                 if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                     DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => { vincularSensores(); })
-                    .catch(function(err) { vincularSensores(); });
+                    .then(permissionState => { if (permissionState === 'granted') vincularGiroscopio(); })
+                    .catch(vincularGiroscopio);
                 } else {
-                    vincularSensores();
+                    vincularGiroscopio();
                 }
 
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
             })
             .catch(function(err) {
-                alert("Se requieren permisos de cámara para desplegar la experiencia.");
+                alert("Se requieren permisos de cámara para activar la experiencia.");
             });
         }
 
-        function vincularSensores() {
-            const eje = document.getElementById('eje-movimiento');
+        function vincularGiroscopio() {
+            const lienzo = document.getElementById('lienzo-360');
             
             window.addEventListener('deviceorientation', function(event) {
                 if (event.alpha !== null) {
-                    // Compensamos la rotación para dar el efecto Pokémon Go.
-                    // Probamos el giro directo del ángulo para asegurar sincronía.
-                    eje.style.transform = 'rotateY(' + event.alpha + 'deg)';
+                    // Capturar la orientación inicial del médico al oprimir el botón
+                    if (inicioAlpha === null) {
+                        inicioAlpha = event.alpha;
+                    }
+                    
+                    // Calcular cuántos grados se ha movido el celular respecto al inicio
+                    let cambioAngulo = event.alpha - inicioAlpha;
+                    
+                    // Ajustar el ángulo entre -180 y 180 grados
+                    if (cambioAngulo > 180) cambioAngulo -= 360;
+                    if (cambioAngulo < -180) cambioAngulo += 360;
+                    
+                    // Conversión matemática: 1 grado de giro físico equivale a mover 12 píxeles la pantalla lateralmente.
+                    // Al rotar el teléfono a la derecha, arrastramos el lienzo a la izquierda, logrando que la propuesta se quede "quieta" en el aire.
+                    let desplazamientoPixeles = cambioAngulo * 12;
+                    
+                    lienzo.style.transform = 'translateX(' + desplazamientoPixeles + 'px)';
                 }
             }, true);
         }
