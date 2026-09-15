@@ -10,55 +10,50 @@
         /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Capa receptora de gestos táctiles */
+        /* VISOR AR: Ventana de captura táctil total arriba de la cámara */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO LIBRE: Maneja ÚNICAMENTE el arrastre horizontal por JavaScript */
+        /* LIENZO PANORÁMICO LIBRE: Ahora se desplaza usando 'left' para evitar conflictos */
         #lienzo-360 {
-            position: absolute; width: 3000px; height: 100%;
+            position: absolute; width: 3000px; height: 100%; left: 0px;
             display: flex; align-items: center; justify-content: center;
-            will-change: transform; transform: translateX(0px);
+            will-change: left;
         }
 
+        /* CONFIGURACIÓN BASE DE BLOQUES EN EL ESPACIO HORIZONTAL */
         .bloque-campana {
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            user-select: none; -webkit-user-select: none; /* Desactivar selección de foto en iPhone */
         }
 
-        /* UBICACIÓN DE LOS BLOQUES EN EL ESPACIO HORIZONTAL */
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
-        #bloque-izquierda { left: calc(50% - 900px); transform: translateX(-50%); width: 240px; }
-        #bloque-derecha { left: calc(50% + 900px); transform: translateX(-50%); width: 240px; }
+        #bloque-izquierda { left: calc(50% - 950px); transform: translateX(-50%); width: 240px; }
+        #bloque-derecha { left: calc(50% + 950px); transform: translateX(-50%); width: 240px; }
 
-        /* SUBCONTENEDORES FLOTANTES: Manejan ÚNICAMENTE la levitación vertical por CSS */
+        /* EVITAR EL ARRASTRE NATIVO DEL NAVEGADOR EN IMÁGENES */
+        img { pointer-events: none; -webkit-user-drag: none; user-select: none; }
+
+        /* EFECTOS EXCLUSIVOS DE LEVITACIÓN EN EJE VERTICAL (TRANSFORM LIBRE) */
         .flotador-foto { animation: levitarFoto 4s ease-in-out infinite; }
         .flotador-prop1 { animation: levitarProp1 4.5s ease-in-out infinite; }
         .flotador-prop2 { animation: levitarProp2 3.5s ease-in-out infinite; }
 
-        .tarjeta-grafica {
-            width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); 
-        }
-        .tarjeta-propuesta {
-            width: 240px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-        }
+        .tarjeta-grafica { width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+        .tarjeta-propuesta { width: 240px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 
-        /* ========================================================
-           ✨ ANIMACIONES EXCLUSIVAS DE LEVITACIÓN VERTICAL
-           ======================================================== */
         @keyframes levitarFoto {
             0% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-15px) rotate(0.5deg); }
             100% { transform: translateY(0px) rotate(0deg); }
         }
-
         @keyframes levitarProp1 {
             0% { transform: translateY(-5px) rotate(-0.3deg); }
             50% { transform: translateY(12px) rotate(0.4deg); }
             100% { transform: translateY(-5px) rotate(-0.3deg); }
         }
-
         @keyframes levitarProp2 {
             0% { transform: translateY(8px) rotate(0.2deg); }
             50% { transform: translateY(-10px) rotate(-0.5deg); }
@@ -78,7 +73,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
         
-        /* Mensaje flotante solicitado */
         .instrucciones {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
             background: rgba(74, 20, 140, 0.95); color: white; padding: 14px 24px;
@@ -98,7 +92,6 @@
         <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
-    <!-- Mensaje solicitado en pantalla libre -->
     <div id="guia-texto" class="instrucciones">
         Desplace a la derecha o izquierda para conocer las propuestas
     </div>
@@ -110,14 +103,14 @@
     <div id="visor-ar">
         <div id="lienzo-360">
             
-            <!-- CONTENIDO IZQUIERDO: Propuesta 1 (Oculta al iniciar) -->
+            <!-- CONTENIDO IZQUIERDO -->
             <div id="bloque-izquierda" class="bloque-campana">
                 <div class="flotador-prop1">
                     <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
                 </div>
             </div>
 
-            <!-- CONTENIDO CENTRAL: Tu foto real -->
+            <!-- CONTENIDO CENTRAL -->
             <div id="bloque-centro" class="bloque-campana">
                 <div class="flotador-foto">
                     <img class="tarjeta-grafica" src="./assets/mi-foto.png" alt="Candidato">
@@ -125,7 +118,7 @@
                 </div>
             </div>
 
-            <!-- CONTENIDO DERECHO: Propuesta 2 (Oculta al iniciar) -->
+            <!-- CONTENIDO DERECHO -->
             <div id="bloque-derecha" class="bloque-campana">
                 <div class="flotador-prop2">
                     <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
@@ -152,7 +145,6 @@
                 video.play();
                 
                 configurarControlTactilLibre();
-
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
             })
@@ -168,24 +160,25 @@
             const lienzo = document.getElementById('lienzo-360');
 
             visor.addEventListener('touchstart', function(e) {
-                toqueInicialX = e.touches.clientX;
+                toqueInicialX = e.touches[0].clientX;
                 posicionInicialLienzo = posicionActual;
                 lienzo.style.transition = 'none';
             }, { passive: true });
 
             visor.addEventListener('touchmove', function(e) {
-                let distanciaDesplazada = e.touches.clientX - toqueInicialX;
+                let distanciaDesplazada = e.touches[0].clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
-                // Límites de arrastre horizontal libres para navegar
+                // Límites estrictos de arrastre
                 if (posicionActual > 1150) posicionActual = 1150;   
                 if (posicionActual < -1150) posicionActual = -1150; 
 
-                lienzo.style.transform = 'translateX(' + posicionActual + 'px)';
+                // TRUCO MAESTRO: Desplazar usando 'left' elimina el bloqueo de animación en celulares
+                lienzo.style.left = posicionActual + 'px';
             }, { passive: true });
 
             visor.addEventListener('touchend', function() {
-                lienzo.style.transition = 'transform 0.2s ease-out';
+                lienzo.style.transition = 'left 0.2s ease-out';
             }, { passive: true });
         }
     </script>
