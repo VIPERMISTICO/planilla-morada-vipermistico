@@ -5,23 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>Planilla Morada AR</title>
     
-    <!-- Forzar compatibilidad estricta con Safari e iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-
-    <!-- Cargamos A-Frame en una versión ultra compatible con giroscopios móviles -->
-    <script src="https://aframe.io"></script>
-    
+    <!-- Forzar pantalla completa e ignorar bloqueos de red externos -->
     <style>
-        /* Forzar que la pantalla ocupe el 100% real sin barras de scroll */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: Arial, sans-serif; }
         
-        /* Video nativo de fondo */
+        /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* Forzar que la escena 3D flote exactamente encima del video en pantalla completa */
-        a-scene { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
+        /* ESCENARIO 3D INTERNO */
+        #universo-ar { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;
+            display: flex; align-items: center; justify-content: center; pointer-events: none;
+            perspective: 800px; /* Genera profundidad tridimensional nativa */
+        }
         
-        /* Interfaz de bienvenida amigable para adultos mayores */
+        /* ROTADOR GIROSCÓPICO: Mueve los elementos al girar el cuerpo */
+        #eje-movimiento {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d;
+        }
+
+        /* DISEÑO DE IMÁGENES EN 3D REAL */
+        .propuesta-3d {
+            position: absolute; top: 50%; left: 50%;
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+            max-width: none;
+        }
+
+        /* Tu foto de campaña flotando al frente */
+        #mi-foto {
+            width: 160px; height: auto;
+            transform: translate(-50%, -60%) translateZ(-350px);
+        }
+
+        /* Propuesta principal abajo de la foto */
+        #propuesta-1 {
+            width: 220px; height: auto;
+            transform: translate(-50%, 65%) translateZ(-350px);
+        }
+
+        /* PROPUESTA 2 (Estilo Pokémon Go): Escondida a la DERECHA. Hay que girar el cuerpo 90 grados para verla */
+        #propuesta-2 {
+            width: 200px; height: auto;
+            transform: translateX(350px) translateY(-50%) rotateY(-90deg);
+        }
+
+        /* Pantalla de bienvenida formal de la planilla */
         #pantalla-inicio {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #4a148c, #7b1fa2);
@@ -34,8 +64,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
         .instrucciones {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(106, 27, 154, 0.9); color: white; padding: 12px 24px;
+            position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
+            background: rgba(74, 20, 140, 0.95); color: white; padding: 12px 24px;
             border-radius: 25px; font-size: 14px; text-align: center; z-index: 999;
             width: 80%; max-width: 300px; font-weight: bold; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
@@ -47,47 +77,31 @@
     <div id="pantalla-inicio">
         <h2 style="margin: 0 0 10px 0; font-size: 28px;">Planilla Morada</h2>
         <p style="font-size: 16px; max-width: 290px; margin: 0 0 15px 0; line-height: 1.4;">Propuestas de campaña en Realidad Aumentada para el Sector Salud.</p>
-        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para ver la experiencia, presiona el botón y permite el uso de la cámara.</p>
-        <button class="btn-activar" onclick="arrancarCampana()">VER PROPUESTAS</button>
+        <p style="font-size: 13px; color: #e0e0e0; max-width: 260px; line-height: 1.3;">Para iniciar, presiona el botón y permite el uso de la cámara del dispositivo.</p>
+        <button class="btn-activar" onclick="inicializarSistema()">VER PROPUESTAS</button>
     </div>
 
-    <!-- Guía de texto para el usuario -->
     <div id="guia-texto" class="instrucciones">
-        Gira tu celular para buscar las propuestas en el espacio.
+        Gira tu celular hacia la derecha para descubrir más propuestas.
     </div>
 
-    <!-- Cámara de video nativa del teléfono -->
+    <!-- Cámara de video nativa -->
     <video id="webcam" autoplay playsinline muted></video>
 
-    <!-- Escena 3D Directa (Sin divs contenedores que rompan el diseño) -->
-    <!-- El estilo transparente asegura que el video se vea abajo sin pantallas negras -->
-    <a-scene embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" style="background: transparent !important;">
-        
-        <a-assets>
-            <img id="foto" src="./assets/mi-foto.png">
-            <img id="prop1" src="./assets/propuesta1.png">
-            <img id="prop2" src="./assets/propuesta2.png">
-        </a-assets>
-
-        <!-- TU FOTO: Flotando exactamente frente al usuario al iniciar -->
-        <a-image src="#foto" position="0 0.4 -2.2" width="1.1" height="1.4"></a-image>
-        
-        <!-- PROPUESTA 1: Justo abajo de tu foto de perfil -->
-        <a-image src="#prop1" position="0 -0.6 -2.2" width="1.6" height="0.45"></a-image>
-
-        <!-- PROPUESTA 2 (Efecto Pokémon Go): Escondida a la derecha. El médico DEBE girar el cuerpo para encontrarla -->
-        <a-image src="#prop2" position="2.2 0.0 -1.0" rotation="0 -65 0" width="1.4" height="0.45"></a-image>
-
-        <!-- CÁMARA VIRTUAL: Desbloquea el giroscopio nativo de los celulares para permitir el paneo 360° -->
-        
-        
-    </a-scene>
+    <!-- Espacio 3D Matemático Puro (Cero dependencias externas) -->
+    <div id="universo-ar">
+        <div id="eje-movimiento">
+            <img id="mi-foto" class="propuesta-3d" src="./assets/mi-foto.png" alt="Candidato">
+            <img id="propuesta-1" class="propuesta-3d" src="./assets/propuesta1.png" alt="Propuesta 1">
+            <img id="propuesta-2" class="propuesta-3d" src="./assets/propuesta2.png" alt="Propuesta 2">
+        </div>
+    </div>
 
     <script>
-        function arrancarCampana() {
+        function inicializarSistema() {
             const video = document.getElementById('webcam');
             
-            // Activar la cámara nativa trasera
+            // 1. Encender la cámara de forma nativa e infalible
             navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
                 audio: false 
@@ -96,14 +110,40 @@
                 video.srcObject = stream;
                 video.play();
                 
-                // Ocultar bienvenida y mostrar instrucciones flotantes
+                // 2. Desbloquear los sensores del giroscopio
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    // Ventana de seguridad para iPhones
+                    DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        vincularSensores();
+                    })
+                    .catch(function(err) {
+                        vincularSensores(); // Intentar en Android si falla
+                    });
+                } else {
+                    // Android y navegadores comunes entran directo
+                    vincularSensores();
+                }
+
                 document.getElementById('pantalla-inicio').style.display = 'none';
                 document.getElementById('guia-texto').style.display = 'block';
             })
             .catch(function(err) {
-                alert("Por seguridad, debes permitir el acceso a la cámara para interactuar con la planilla.");
-                console.error(err);
+                alert("Se requieren permisos de cámara para desplegar la experiencia.");
             });
+        }
+
+        function vincularSensores() {
+            const eje = document.getElementById('eje-movimiento');
+            
+            // Leemos el movimiento real del giroscopio del teléfono
+            window.addEventListener('deviceorientation', function(event) {
+                if (event.alpha !== null) {
+                    // El truco definitivo: Rotamos todo el universo 3D en sentido inverso al teléfono.
+                    // Al mover el celular a la derecha, las imágenes se quedan quietas en el aire del cuarto.
+                    eje.style.transform = 'rotateY(' + (-event.alpha) + 'deg)';
+                }
+            }, true);
         }
     </script>
 </body>
