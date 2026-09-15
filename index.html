@@ -10,13 +10,13 @@
         /* CÁMARA REAL: Fondo absoluto */
         #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
         
-        /* VISOR AR: Ventana de recorte que recibe los toques directamente */
+        /* VISOR AR: Capa receptora de gestos táctiles */
         #visor-ar { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             overflow: hidden; display: flex; align-items: center; justify-content: center;
         }
         
-        /* LIENZO PANORÁMICO LIBRE: 3000px de ancho para esparcir el contenido */
+        /* LIENZO PANORÁMICO LIBRE: Maneja ÚNICAMENTE el arrastre horizontal por JavaScript */
         #lienzo-360 {
             position: absolute; width: 3000px; height: 100%;
             display: flex; align-items: center; justify-content: center;
@@ -27,39 +27,39 @@
             position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        /* Tu foto de campaña: Centrada perfectamente al frente al iniciar */
+        /* UBICACIÓN DE LOS BLOQUES EN EL ESPACIO HORIZONTAL */
         #bloque-centro { left: 50%; transform: translateX(-50%); width: 260px; }
-        #bloque-centro img { 
+        #bloque-izquierda { left: calc(50% - 900px); transform: translateX(-50%); width: 240px; }
+        #bloque-derecha { left: calc(50% + 900px); transform: translateX(-50%); width: 240px; }
+
+        /* SUBCONTENEDORES FLOTANTES: Manejan ÚNICAMENTE la levitación vertical por CSS */
+        .flotador-foto { animation: levitarFoto 4s ease-in-out infinite; }
+        .flotador-prop1 { animation: levitarProp1 4.5s ease-in-out infinite; }
+        .flotador-prop2 { animation: levitarProp2 3.5s ease-in-out infinite; }
+
+        .tarjeta-grafica {
             width: 160px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); 
-            animation: levitarFoto 4s ease-in-out infinite; /* EFECTO FLOTANTE */
+        }
+        .tarjeta-propuesta {
+            width: 240px; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
         }
 
-        /* Propuesta 1: Escondida a 900 píxeles hacia la izquierda */
-        #bloque-izquierda { left: calc(50% - 900px); transform: translateX(-50%); width: 240px; }
-        #bloque-izquierda img { animation: levitarPropuesta1 4.5s ease-in-out infinite; /* Tiempo desfasado para realismo */ }
-
-        /* Propuesta 2: Escondida a 900 píxeles hacia la derecha */
-        #bloque-derecha { left: calc(50% + 900px); transform: translateX(-50%); width: 240px; }
-        #bloque-derecha img { animation: levitarPropuesta2 3.5s ease-in-out infinite; /* Tiempo desfasado para realismo */ }
-
-        .tarjeta-propuesta { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
-
         /* ========================================================
-           ✨ ANIMACIONES MATEMÁTICAS DE LEVITACIÓN EN EL ESPACIO (CSS)
+           ✨ ANIMACIONES EXCLUSIVAS DE LEVITACIÓN VERTICAL
            ======================================================== */
         @keyframes levitarFoto {
             0% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(0.5deg); } /* Sube 15px y rota un poquito */
+            50% { transform: translateY(-15px) rotate(0.5deg); }
             100% { transform: translateY(0px) rotate(0deg); }
         }
 
-        @keyframes levitarPropuesta1 {
+        @keyframes levitarProp1 {
             0% { transform: translateY(-5px) rotate(-0.3deg); }
-            50% { transform: translateY(12px) rotate(0.4deg); } /* Se balancea al ritmo opuesto */
+            50% { transform: translateY(12px) rotate(0.4deg); }
             100% { transform: translateY(-5px) rotate(-0.3deg); }
         }
 
-        @keyframes levitarPropuesta2 {
+        @keyframes levitarProp2 {
             0% { transform: translateY(8px) rotate(0.2deg); }
             50% { transform: translateY(-10px) rotate(-0.5deg); }
             100% { transform: translateY(8px) rotate(0.2deg); }
@@ -78,7 +78,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin-top: 25px;
         }
         
-        /* Mensaje limpio flotante */
+        /* Mensaje flotante solicitado */
         .instrucciones {
             position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%);
             background: rgba(74, 20, 140, 0.95); color: white; padding: 14px 24px;
@@ -112,18 +112,24 @@
             
             <!-- CONTENIDO IZQUIERDO: Propuesta 1 (Oculta al iniciar) -->
             <div id="bloque-izquierda" class="bloque-campana">
-                <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
+                <div class="flotador-prop1">
+                    <img class="tarjeta-propuesta" src="./assets/propuesta1.png" alt="Propuesta 1">
+                </div>
             </div>
 
             <!-- CONTENIDO CENTRAL: Tu foto real -->
             <div id="bloque-centro" class="bloque-campana">
-                <img src="./assets/mi-foto.png" alt="Candidato">
-                <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 5px 14px; border-radius: 10px; margin-top: 15px; font-size: 14px;">Planilla Morada</p>
+                <div class="flotador-foto">
+                    <img class="tarjeta-grafica" src="./assets/mi-foto.png" alt="Candidato">
+                    <p style="color: white; font-weight: bold; background: rgba(74, 20, 140, 0.9); padding: 5px 14px; border-radius: 10px; margin-top: 15px; font-size: 14px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">Planilla Morada</p>
+                </div>
             </div>
 
             <!-- CONTENIDO DERECHO: Propuesta 2 (Oculta al iniciar) -->
             <div id="bloque-derecha" class="bloque-campana">
-                <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
+                <div class="flotador-prop2">
+                    <img class="tarjeta-propuesta" src="./assets/propuesta2.png" alt="Propuesta 2">
+                </div>
             </div>
 
         </div>
@@ -171,7 +177,7 @@
                 let distanciaDesplazada = e.touches.clientX - toqueInicialX;
                 posicionActual = posicionInicialLienzo + distanciaDesplazada;
 
-                // Límites de arrastre ajustados proporcionalmente
+                // Límites de arrastre horizontal libres para navegar
                 if (posicionActual > 1150) posicionActual = 1150;   
                 if (posicionActual < -1150) posicionActual = -1150; 
 
